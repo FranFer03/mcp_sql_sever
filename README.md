@@ -8,8 +8,10 @@ Servidor MCP local para investigar SQL Server desde Claude Desktop, Claude Code 
 2. Instala un driver ODBC para SQL Server.
 3. Clona este repositorio.
 4. Crea y completa `.env` a partir de `.env.example`.
-5. Ejecuta `scripts\install-claude-desktop.ps1`.
-6. Reinicia Claude Desktop.
+5. Ejecuta el instalador del cliente que uses:
+   - Claude Desktop: `scripts\install-claude-desktop.ps1`
+   - Codex: `scripts\install-codex.ps1`
+6. Reinicia el cliente.
 
 ## Requisitos
 
@@ -95,6 +97,89 @@ Notas:
 - Si `ODBC Driver 18` da problemas en una instancia local, el conector intenta fallbacks controlados con `Encrypt=no`, `ODBC Driver 17` y el driver legado `SQL Server`.
 - No guardes secretos en el repo.
 
+## Registrar el MCP en Codex
+
+Este repo incluye un instalador para Codex:
+
+```powershell
+.\scripts\install-codex.ps1
+```
+
+Ese script:
+
+- crea backup de `C:\Users\TU_USUARIO\.codex\config.toml` si ya existe
+- preserva el resto de la configuracion
+- registra o actualiza `mcp_sql_server`
+- habilita el MCP
+- deja todas las tools en modo `approve`
+
+Opciones utiles:
+
+```powershell
+.\scripts\install-codex.ps1 -ServerName "sql_server_readonly"
+.\scripts\install-codex.ps1 -UvPath "C:\Users\TU_USUARIO\.local\bin\uv.exe"
+.\scripts\install-codex.ps1 -CodexConfigPath "$env:USERPROFILE\.codex\config.toml"
+```
+
+## Configuracion manual de Codex
+
+Si prefieres editar el archivo a mano, agrega esta entrada en:
+
+`%USERPROFILE%\.codex\config.toml`
+
+```toml
+[mcp_servers.mcp_sql_server]
+command = "C:\\Users\\TU_USUARIO\\.local\\bin\\uv.exe"
+args = [
+  "--directory",
+  "C:\\ruta\\a\\mcp_sql_sever",
+  "run",
+  "--python",
+  "3.12",
+  "mcp-sql-server"
+]
+env = { UV_CACHE_DIR = "C:\\ruta\\a\\mcp_sql_sever\\.uv-cache", UV_PYTHON_INSTALL_DIR = "C:\\ruta\\a\\mcp_sql_sever\\.uv-python" }
+enabled = true
+
+[mcp_servers.mcp_sql_server.tools.server_info]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.list_schemas]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.list_tables]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.describe_table]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.search_columns]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.table_profile]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.index_info]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.foreign_keys]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.dependencies]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.sample_rows]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.run_select]
+approval_mode = "approve"
+
+[mcp_servers.mcp_sql_server.tools.explain_select]
+approval_mode = "approve"
+```
+
+El MCP carga la conexion SQL desde `.env`, por lo que no hace falta meter `MSSQL_*` dentro del TOML de Codex.
+
 ## Registrar el MCP en Claude Desktop
 
 Este repo incluye un instalador para Claude Desktop:
@@ -162,14 +247,14 @@ Tests:
 uv run --python 3.12 pytest
 ```
 
-Prueba en Claude Desktop:
+Prueba en Codex o Claude Desktop:
 
-1. Reinicia Claude Desktop.
+1. Reinicia Codex o Claude Desktop.
 2. Abre un chat nuevo.
 3. Pide:
 
 ```text
-Usa mcp-sql-server y ejecuta server_info, luego list_schemas.
+Usa mcp_sql_server y ejecuta server_info, luego list_schemas.
 ```
 
 ## Tools disponibles
@@ -203,6 +288,6 @@ Para que otro usuario lo instale en su Claude Desktop necesita:
 2. `uv`.
 3. Un ODBC Driver de SQL Server.
 4. Su propio `.env` con acceso a su SQL Server.
-5. Ejecutar `.\scripts\install-claude-desktop.ps1`.
+5. Ejecutar `.\scripts\install-codex.ps1` o `.\scripts\install-claude-desktop.ps1`, segun el cliente.
 
-No hace falta que edite Python, ni que toque el JSON de Claude Desktop a mano, salvo que quiera una configuracion personalizada.
+No hace falta que edite Python, ni que toque la configuracion del cliente a mano, salvo que quiera una configuracion personalizada.
